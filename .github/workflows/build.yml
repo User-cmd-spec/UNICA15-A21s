@@ -60,6 +60,11 @@ jobs:
           source ./buildenv.sh ${{ matrix.target }}
           ./scripts/build_dependencies.sh
 
+      - name: Install samloader-rs
+        run: |
+          curl -sL https://github.com/topjohnwu/samloader-rs/releases/latest/download/samloader-linux-x86_64.tar.gz | tar -xz -C /usr/local/bin/
+          chmod +x /usr/local/bin/samloader   
+
       - name: Download source firmware
         run: |
           source ./buildenv.sh ${{ matrix.target }}
