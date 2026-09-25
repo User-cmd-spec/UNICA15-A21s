@@ -4,7 +4,6 @@
 
 # [
 source "$SRC_DIR/scripts/utils/firmware_utils.sh" || exit 1
-source "$TOOLS_DIR/venv/bin/activate" || exit 1
 
 FORCE=false
 
@@ -68,7 +67,7 @@ PRINT_USAGE()
     echo "Usage: download_fw [options] <firmware>" >&2
     echo " --ignore-source : Skip parsing source firmware flags" >&2
     echo " --ignore-target : Skip parsing target firmware flags" >&2
-    echo " -f, --force : Force firmware download" >&2
+    echo " -f, --force     : Force firmware download" >&2
 }
 
 VERIFY_ODIN_PACKAGES()
@@ -87,11 +86,11 @@ VERIFY_ODIN_PACKAGES()
         # Samsung stores the output of `md5sum` at the very end of the file
         LENGTH="32" # Length of MD5 hash
         LENGTH="$((LENGTH + 2))" # 2 whitespace chars
-        LENGTH="$((LENGTH + ${#FILE_NAME}))" # File name without .md5 extension
+        LENGTH="$((LENGTH +${#FILE_NAME}))" # File name without .md5 extension
         LENGTH="$((LENGTH + 1))" # 1 newline char
 
         STORED_HASH="$(tail -c "$LENGTH" "$f" | cut -d " " -f 1 -s)"
-        if [ ! "$STORED_HASH" ] || [[ "${#STORED_HASH}" != "32" ]]; then
+        if [ ! "$STORED_HASH" ] \vert{}\vert{} [[ "${#STORED_HASH}" != "32" ]]; then
             LOG "\033[0;31m! Expected hash could not be parsed\033[0m"
             exit 1
         fi
@@ -119,7 +118,7 @@ for i in "${FIRMWARES[@]}"; do
         exit 1
     fi
 
-    LOG_STEP_IN "- Processing $MODEL firmware with $CSC CSC"
+    LOG_STEP_IN "- Processing $MODEL firmware with$CSC CSC"
     LOG "- Downloaded firmware: $(cat "$ODIN_DIR/${MODEL}_${CSC}/.downloaded" 2> /dev/null)"
     LOG "- Extracted firmware: $(cat "$FW_DIR/${MODEL}_${CSC}/.extracted" 2> /dev/null)"
     LOG "- Latest available firmware: $LATEST_FIRMWARE"
@@ -151,14 +150,16 @@ for i in "${FIRMWARES[@]}"; do
     LOG "- Downloading firmware..."
     [ -f "$ODIN_DIR/${MODEL}_${CSC}/.downloaded" ] && rm -rf "$ODIN_DIR/${MODEL}_${CSC}"
     mkdir -p "$ODIN_DIR/${MODEL}_${CSC}"
-    # Anan's samloader stores its logs in the current working directory, let's move into OUT_DIR just for this time
-    (
-    cd "$OUT_DIR" || exit 1
-    samloader -m "$MODEL" -r "$CSC" -i "$IMEI" -s "$SERIAL_NO" download -O "$ODIN_DIR/${MODEL}_${CSC}" 1> /dev/null || exit 1
-    )
+
+    # Build samloader-rs command array dynamically
+    SAMLOADER_ARGS=(-m "$MODEL" -r "$CSC" -o "$ODIN_DIR/${MODEL}_${CSC}")
+    [ -n "$IMEI" ] && SAMLOADER_ARGS+=(-i "$IMEI")
+    [ -n "$SERIAL_NO" ] && SAMLOADER_ARGS+=(-s "$SERIAL_NO")
+
+    samloader download "${SAMLOADER_ARGS[@]}" 1> /dev/null || exit 1
 
     ZIP_FILE="$(find "$ODIN_DIR/${MODEL}_${CSC}" -name "*.zip" | sort -r | head -n 1)"
-    if [ ! "$ZIP_FILE" ] || [ ! -f "$ZIP_FILE" ]; then
+    if [ ! "$ZIP_FILE" ] \vert{}\vert{} [ ! -f "$ZIP_FILE" ]; then
         LOG "\033[0;31m! Download failed\033[0m"
         exit 1
     fi
@@ -172,7 +173,5 @@ for i in "${FIRMWARES[@]}"; do
 
     LOG_STEP_OUT; LOG_STEP_OUT
 done
-
-deactivate
 
 exit 0
