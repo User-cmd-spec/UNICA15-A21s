@@ -62,8 +62,18 @@ jobs:
 
       - name: Install samloader-rs
         run: |
-          curl -sL https://github.com/topjohnwu/samloader-rs/releases/latest/download/samloader-linux-x86_64.tar.gz | tar -xz -C /usr/local/bin/
-          chmod +x /usr/local/bin/samloader   
+          gh release download --repo topjohnwu/samloader-rs --pattern "*linux*" --dir /tmp
+          cd /tmp
+          if ls *.tar.gz 1> /dev/null 2>&1; then
+            sudo tar -xzf *.tar.gz -C /usr/local/bin/
+          elif ls *.zip 1> /dev/null 2>&1; then
+            sudo unzip -o *.zip -d /usr/local/bin/
+          else
+            sudo mv samloader* /usr/local/bin/samloader
+          fi
+          sudo chmod +x /usr/local/bin/samloader
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
 
       - name: Download source firmware
         run: |
