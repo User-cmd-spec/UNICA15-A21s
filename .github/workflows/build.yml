@@ -62,25 +62,40 @@ jobs:
 
       - name: Install samloader-rs
         run: |
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/topjohnwu/samloader-rs/releases/latest | grep "browser_download_url" | grep -i "linux" | head -n 1 | cut -d '"' -f 4)
+         DOWNLOAD_URL=$(curl -fsSL https://api.github.com/repos/topjohnwu/samloader-rs/releases/latest \
+         | grep '"browser_download_url"' \
+         | grep 'linux-x86_64.zip' \
+         | cut -d '"' -f 4 \
+         | head -n 1)
 
-          if [ -z "$DOWNLOAD_URL" ]; then
-            echo "Error: Could not resolve download URL from GitHub API"
-            exit 1
-          fi
+         if [ -z "$DOWNLOAD_URL" ]; then
+         echo "Error: Could not resolve Linux x86_64 download URL from GitHub API"
+          exit 1
+         fi
 
-          echo "Downloading: $DOWNLOAD_URL"
-          curl -sL "$DOWNLOAD_URL" -o /tmp/samloader_asset
+         echo "Downloading: $DOWNLOAD_URL"
 
-          if tar -tzf /tmp/samloader_asset >/dev/null 2>&1; then
-            sudo tar -xzf /tmp/samloader_asset -C /usr/local/bin/
-          elif unzip -t /tmp/samloader_asset >/dev/null 2>&1; then
-            sudo unzip -o /tmp/samloader_asset -d /usr/local/bin/
-          else
-            sudo mv /tmp/samloader_asset /usr/local/bin/samloader
-          fi
+         curl -fsSL "$DOWNLOAD_URL" -o /tmp/samloader_asset
 
-          sudo chmod +x /usr/local/bin/samloader
+         rm -f /usr/local/bin/samloader
+
+         if unzip -t /tmp/samloader_asset >/dev/null 2>&1; then
+          sudo unzip -o /tmp/samloader_asset -d /usr/local/bin/
+           elif tar -tzf /tmp/samloader_asset >/dev/null 2>&1; then
+         sudo tar -xzf /tmp/samloader_asset -C /usr/local/bin/
+         else
+          echo "Error: Downloaded samloader asset is not a valid archive"
+         file /tmp/samloader_asset
+         exit 1
+         fi
+
+         sudo chmod 0755 /usr/local/bin/samloader
+
+         echo "Installed samloader:"
+         file /usr/local/bin/samloader
+
+         echo "Testing samloader:"
+         /usr/local/bin/samloader --version
 
       - name: Download source firmware
         run: |
